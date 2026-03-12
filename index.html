@@ -275,6 +275,8 @@
                 <div class="header-item">面板 ATK: <span id="rAtk" class="header-val">0</span></div>
                 <div class="header-item">間隔: <span id="rInt" class="header-val">0s</span> (<span id="rF">0</span>F)
                 </div>
+                <div class="header-item">總 Hit 數: <span id="rTotalHits" class="header-val"
+                        style="color:#ffb86c">0</span></div>
                 <div class="header-item">綜合 DPH: <span id="rDph" class="header-val" style="color:var(--accent)">0</span>
                 </div>
                 <div class="header-item">綜合 DPS: <span id="rDps" class="header-val" style="color:var(--elem)">0</span>
@@ -382,6 +384,7 @@
             const eFieldSec = (panelAtk * (parseFloat(document.getElementById('fieldE').value) / 100)) * eDef;
 
             // 模擬變量
+            let actualAtkCount = 0;
             let curEP = eMax, immuneTimer = 0, effectTimer = 0;
             let pTot = 0, aTot = 0, tTot = 0, totalE = 0;
             let bursts = 0, logs = [];
@@ -439,6 +442,7 @@
 
                 // --- 基礎傷害邏輯區塊 ---
                 if (isAtkFrame) {
+                    actualAtkCount++;
                     // 物理
                     if (isP) {
                         let a = (panelAtk * (1 + parseFloat(document.getElementById('bP').value) / 100)) + inspired;
@@ -462,13 +466,15 @@
             }
 
             // --- 5. 渲染與最終結果計算 ---
+            const totalHitsCount = actualAtkCount * hits;
+            document.getElementById('rTotalHits').innerText = totalHitsCount.toLocaleString();
             document.getElementById('rAtk').innerText = Math.round(panelAtk + inspired);
             document.getElementById('rInt').innerText = rInt.toFixed(3) + "s";
             document.getElementById('rF').innerText = frames;
 
             const setRow = (id, active, tot) => {
                 const val = active ? tot : 0;
-                const count = duration / rInt;
+                const count = actualAtkCount || (duration / rInt);
                 const dph = Math.round(val / count || 0);
                 const dps = Math.round(val / duration || 0);
 
