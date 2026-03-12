@@ -346,138 +346,151 @@
         }
 
         function calculate() {
-            // 1. 基礎
+            // 1. 基礎參數獲取與面板計算
             const baseAtk = parseFloat(document.getElementById('baseAtk').value) || 0;
             const panelAtk = baseAtk * (1 + getS('allBuff') / 100);
             const inspired = parseFloat(document.getElementById('inspired').value) || 0;
-            const frames = Math.max(1, Math.round((parseFloat(document.getElementById('baseInt').value) / ((100 + getS('aspd')) / 100)) * 30));
-            const rInt = frames / 30, duration = parseFloat(document.getElementById('duration').value) || 0;
-            const hits = parseInt(document.getElementById('hits').value) || 1, enInt = parseFloat(document.getElementById('enAtkInt').value) || 1;
 
-            // 2. 元素
+            // 攻速與幀數換算 (Arknights 30FPS 標準)
+            const aspd = 100 + getS('aspd');
+            const baseInt = parseFloat(document.getElementById('baseInt').value) || 1.0;
+            const frames = Math.max(1, Math.round((baseInt / (aspd / 100)) * 30));
+            const rInt = frames / 30; // 實際攻擊間隔(秒)
+
+            const duration = parseFloat(document.getElementById('duration').value) || 0;
+            const hits = parseInt(document.getElementById('hits').value) || 1;
+            const enemyAtkInt = parseFloat(document.getElementById('enAtkInt').value) || 1.0;
+
+            // 2. 獲取開關狀態 (核心閘門)
+            const isP = document.getElementById('tP').checked;
+            const isA = document.getElementById('tA').checked;
+            const isT = document.getElementById('tT').checked;
+            const isE = document.getElementById('tE').checked;
+
+            // 3. 元素參數預載
             const eType = document.getElementById('eType').value;
             const eMax = parseFloat(document.getElementById('eMax').value) || 1000;
             const eDef = 1 - (parseFloat(document.getElementById('eDef').value) / 100);
             const eResM = 1 - (parseFloat(document.getElementById('eRes').value) / 100);
             const eCDRec = 1 + (parseFloat(document.getElementById('eCDRec').value) / 100);
 
-            const burstLimit = (eType === 'necrosis' ? 15 : 10);
-            const cdLimit = burstLimit / eCDRec;
-
             const eAtkBuild = ((panelAtk * (1 + parseFloat(document.getElementById('bE').value) / 100) + inspired) * (parseFloat(document.getElementById('sE').value) / 100) + parseFloat(document.getElementById('fE').value)) * eDef * hits;
             const eFieldSec = (panelAtk * (parseFloat(document.getElementById('fieldE').value) / 100)) * eDef;
 
-            let curEP = eMax, immuneTimer = 0, effectTimer = 0, totalE = 0;
-            let logs = [], bursts = 0, pTot = 0, aTot = 0, tTot = 0;
+            // 模擬變量
+            let curEP = eMax, immuneTimer = 0, effectTimer = 0;
+            let pTot = 0, aTot = 0, tTot = 0, totalE = 0;
+            let bursts = 0, logs = [];
 
-            // 3. 模擬
-            // --- 元素模擬核心邏輯修復 ---
+            // 4. 幀同步模擬迴圈 (30 FPS)
             for (let f = 0; f < duration * 30; f++) {
                 let t = f / 30;
-                let isAtk = (f % frames === 0);
-                let resDebuff = 0;
+                let isAtkFrame = (f % frames === 0);
+                let currentResDebuff = 0;
 
-                // 1. 處理效果存續期 (Debuff & Necrosis DoT)
-                if (effectTimer > 0) {
-                    if (eType === 'burn') resDebuff = 20; // 灼燃減抗 20
-                    if (eType === 'necrosis') {
-                        // 凋亡每幀產生的 True Damage (800/30)
-                        totalE += (800 * eResM) / 30;
+                // --- 元素邏輯區塊 (由 isE 控制) ---
+                if (isE) {
+                    // 處理效果存續 (DoT / 減益)
+                    if (effectTimer > 0) {
+                        if (eType === 'burn') currentResDebuff = 20; // 灼燃減抗
+                        if (eType === 'necrosis') totalE += (800 * eResM) / 30; // 凋亡 DoT
+                        effectTimer -= 1 / 30;
                     }
-                    effectTimer -= 1 / 30;
-                }
 
-                // 2. 處理累積期與爆發觸發
-                if (immuneTimer <= 0) {
-                    // 累積損傷 (每幀扣減 EP)
-                    curEP -= eFieldSec / 30;
-                    if (isAtk) curEP -= eAtkBuild;
+                    // 處理 EP 累積與爆發
+                    if (immuneTimer <= 0) {
+                        curEP -= eFieldSec / 30; // 領域累積
+                        if (isAtkFrame) curEP -= eAtkBuild; // 攻擊累積
 
-                    if (curEP <= 0) {
-                        bursts++;
-                        // 設定免疫期與效果期 (通常相同，受 CD 恢復速度影響)
-                        const burstDuration = (eType === 'necrosis' ? 15 : 10);
-                        immuneTimer = burstDuration / eCDRec;
-                        effectTimer = burstDuration;
+                        if (curEP <= 0) {
+                            bursts++;
+                            let controlDuration = 0;
+                            let typeName = "";
 
-                        // 執行單次爆發傷害 (灼燃 7000, 神經 6000)
-                        if (eType === 'burn') totalE += 7000 * eResM;
-                        // --- 神經損傷控制邏輯修復 ---
-                        if (eType === 'neuro') {
-                            // 1. 結算 6000 點單次元素傷害
-                            totalE += 6000 * eResM;
+                            if (eType === 'neuro') {
+                                controlDuration = 3 * enemyAtkInt; // 3次麻痺
+                                totalE += 6000 * eResM;
+                                typeName = "神經爆發";
+                            } else if (eType === 'burn') {
+                                controlDuration = 10; // 灼燃 10s
+                                totalE += 7000 * eResM;
+                                typeName = "灼燃爆發";
+                            } else if (eType === 'necrosis') {
+                                controlDuration = 15; // 凋亡 15s
+                                typeName = "凋亡爆發";
+                            }
 
-                            // 2. 計算控制時長：3 倍於敵方攻擊間隔
-                            // 注意：這裡使用的是輸入框中的 enAtkInt (怪物攻擊間隔)
-                            const enemyInt = parseFloat(document.getElementById('enAtkInt').value) || 2.0;
-                            const neuroControlDuration = 3 * enemyInt;
+                            immuneTimer = controlDuration / eCDRec;
+                            effectTimer = controlDuration;
 
-                            // 3. 進入免疫期與控制期
-                            // 根據 v6.4 邏輯，免疫期與控制期通常同步
-                            immuneTimer = neuroControlDuration / eCDRec;
-                            effectTimer = neuroControlDuration;
+                            const recoveryTime = t + controlDuration;
+                            logs.push(`[${t.toFixed(2)}s] <b>${typeName} #${bursts}</b> -> 預計於 <b>${recoveryTime.toFixed(2)}s</b> 解控`);
 
-                            // 4. 日誌記錄 (增加精確度)
-                            logs.push(`
-                                <div class="log-entry" style="border-left: 2px solid #ff7b72">
-                                    [${t.toFixed(2)}s] <b>神經爆發</b>：造成 ${Math.round(6000 * eResM)} 傷害。
-                                    <br>└ 敵人陷入麻痺，時長 ${neuroControlDuration.toFixed(2)}s (3x 間隔)。
-                                </div>
-                            `);
+                            curEP = eMax;
                         }
-
-                        // 日誌記錄
-                        let logMsg = `[${t.toFixed(2)}s] 爆發 #${bursts} (${eType})`;
-                        logs.push(`<div class="log-entry">${logMsg}</div>`);
-
-                        curEP = eMax; // 重置 EP 條
+                    } else {
+                        immuneTimer -= 1 / 30;
                     }
-                } else {
-                    immuneTimer -= 1 / 30;
                 }
 
-                if (effectTimer > 0) {
-                    if (eType === 'burn') resDebuff = 20;
-                    if (eType === 'necrosis') totalE += (800 * eResM) / 30;
-                    effectTimer -= 1 / 30;
-                }
-
-                if (isAtk) {
-                    if (document.getElementById('tP').checked) {
+                // --- 基礎傷害邏輯區塊 ---
+                if (isAtkFrame) {
+                    // 物理
+                    if (isP) {
                         let a = (panelAtk * (1 + parseFloat(document.getElementById('bP').value) / 100)) + inspired;
                         let d = (parseFloat(document.getElementById('def').value) || 0) * (1 - parseFloat(document.getElementById('ignP').value) / 100);
                         let dmg = Math.max((a * parseFloat(document.getElementById('sP').value) / 100 + parseFloat(document.getElementById('fP').value)) - d, a * 0.05);
                         pTot += dmg * hits * (1 + parseFloat(document.getElementById('fraP').value) / 100) * (1 - parseFloat(document.getElementById('redP').value) / 100);
                     }
-                    if (document.getElementById('tA').checked) {
+                    // 法術
+                    if (isA) {
                         let a = (panelAtk * (1 + parseFloat(document.getElementById('bA').value) / 100)) + inspired;
-                        let r = Math.max(0, (parseFloat(document.getElementById('res').value) || 0) - resDebuff) * (1 - parseFloat(document.getElementById('ignA').value) / 100);
+                        let r = Math.max(0, (parseFloat(document.getElementById('res').value) || 0) - currentResDebuff) * (1 - parseFloat(document.getElementById('ignA').value) / 100);
                         let dmg = Math.max((a * parseFloat(document.getElementById('sA').value) / 100 + parseFloat(document.getElementById('fA').value)) * (1 - r / 100), a * 0.05);
                         aTot += dmg * hits * (1 + parseFloat(document.getElementById('fraA').value) / 100) * (1 - parseFloat(document.getElementById('redA').value) / 100);
                     }
-                    if (document.getElementById('tT').checked) {
+                    // 真實
+                    if (isT) {
                         let a = (panelAtk * (1 + parseFloat(document.getElementById('bT').value) / 100)) + inspired;
                         tTot += (a * parseFloat(document.getElementById('sT').value) / 100 + parseFloat(document.getElementById('fT').value)) * hits;
                     }
                 }
             }
 
-            // 4. UI 渲染
+            // 5. 渲染與最終結果計算
             document.getElementById('rAtk').innerText = Math.round(panelAtk + inspired);
             document.getElementById('rInt').innerText = rInt.toFixed(3) + "s";
             document.getElementById('rF').innerText = frames;
-            const setR = (id, tot) => {
+
+            const setRow = (id, active, tot) => {
+                const val = active ? tot : 0;
                 const count = duration / rInt;
-                document.getElementById('oDph' + id).innerText = Math.round(tot / count || 0).toLocaleString();
-                document.getElementById('oDps' + id).innerText = Math.round(tot / duration || 0).toLocaleString();
-                document.getElementById('oTot' + id).innerText = Math.round(tot).toLocaleString();
+                document.getElementById('oDph' + id).innerText = Math.round(val / count || 0).toLocaleString();
+                document.getElementById('oDps' + id).innerText = Math.round(val / duration || 0).toLocaleString();
+                document.getElementById('oTot' + id).innerText = Math.round(val).toLocaleString();
+                return val;
             };
-            setR('P', pTot); setR('A', aTot); setR('T', tTot);
-            document.getElementById('oDpsE').innerText = Math.round(totalE / duration || 0).toLocaleString();
-            document.getElementById('oTotE').innerText = Math.round(totalE).toLocaleString();
-            let grand = pTot + aTot + tTot + totalE;
-            document.getElementById('rTotal').innerText = Math.round(grand).toLocaleString();
-            document.getElementById('log').innerHTML = logs.length ? logs.join('') : "未觸發爆發。";
+
+            const finalP = setRow('P', isP, pTot);
+            const finalA = setRow('A', isA, aTot);
+            const finalT = setRow('T', isT, tTot);
+
+            // 元素特別渲染
+            const finalE = isE ? totalE : 0;
+            document.getElementById('oDpsE').innerText = Math.round(finalE / duration || 0).toLocaleString();
+            document.getElementById('oTotE').innerText = Math.round(finalE).toLocaleString();
+
+            // 總傷害 (Grand Total) 僅加總已勾選類型
+            const grandTotal = finalP + finalA + finalT + finalE;
+            document.getElementById('rTotal').innerText = Math.round(grandTotal).toLocaleString();
+
+            // 日誌處理
+            const logContainer = document.getElementById('log');
+            if (!isE) {
+                logContainer.innerHTML = "<span style='color:#666'>元素計算已關閉</span>";
+            } else {
+                logContainer.innerHTML = logs.length ? logs.map(l => `<div class="log-entry">${l}</div>`).join('') : "未觸發元素爆發。";
+            }
         }
         updateUI();
     </script>
