@@ -1,283 +1,486 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>明日方舟傷害計算器</title>
+    <title>明日方舟計算器 - v6.4 UI 完全修復版</title>
     <style>
-        :root { --bg: #0d1117; --card: #161b22; --accent: #58a6ff; --text: #c9d1d9; --border: #30363d; --phys: #ff7b72; --arts: #79c0ff; --true: #ffffff; }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); padding: 20px; font-size: 14px; }
-        .container { max-width: 1250px; margin: 0 auto; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 15px; }
-        .card { background: var(--card); padding: 15px; border-radius: 8px; border: 1px solid var(--border); }
-        h2 { font-size: 1.1rem; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-top: 0; }
-        
-        .input-group { margin-bottom: 12px; }
-        label { display: block; font-size: 0.85rem; color: #8b949e; margin-bottom: 4px; }
-        input, textarea { background: #010409; border: 1px solid var(--border); color: #fff; padding: 8px; border-radius: 4px; width: 100%; box-sizing: border-box; }
-        textarea { height: 50px; resize: vertical; font-family: monospace; font-size: 12px; }
-        
-        /* 結果面板 */
-        .result-panel { background: #010409; border: 2px solid var(--accent); padding: 25px; margin-top: 25px; border-radius: 8px; }
-        .res-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        .res-table th { text-align: left; color: #8b949e; font-size: 0.8rem; border-bottom: 1px solid var(--border); padding: 8px; }
-        .res-table td { padding: 12px 8px; font-size: 1.1rem; border-bottom: 1px solid #21262d; }
-        
-        .type-label { font-weight: bold; }
-        .phys-text { color: var(--phys); }
-        .arts-text { color: var(--arts); }
-        .true-text { color: var(--true); }
-        .total-text { color: #f2c94c; font-size: 1.4rem; font-weight: bold; }
-        
-        .summary-header { display: flex; gap: 40px; margin-bottom: 20px; border-bottom: 1px dashed var(--border); padding-bottom: 15px; }
-        .header-item { display: flex; flex-direction: column; }
-        .header-label { font-size: 0.8rem; color: #8b949e; }
-        .header-val { font-size: 1.4rem; font-weight: bold; color: var(--accent); }
+        :root {
+            --bg: #0d1117;
+            --card: #161b22;
+            --accent: #58a6ff;
+            --text: #c9d1d9;
+            --border: #30363d;
+            --phys: #ff7b72;
+            --arts: #79c0ff;
+            --true: #ffffff;
+            --elem: #d2a8ff;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 20px;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 15px;
+        }
+
+        .card {
+            background: var(--card);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        h2 {
+            font-size: 1rem;
+            color: var(--accent);
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 8px;
+            margin-top: 0;
+        }
+
+        .input-group {
+            margin-bottom: 8px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.75rem;
+            color: #8b949e;
+            margin-bottom: 2px;
+        }
+
+        input,
+        textarea,
+        select {
+            background: #010409;
+            border: 1px solid var(--border);
+            color: #fff;
+            padding: 7px;
+            border-radius: 4px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        textarea {
+            height: 35px;
+            resize: none;
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        .switch-container {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            background: #1c2128;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid var(--accent);
+        }
+
+        /* 核心修復：確保顯示邏輯正常 */
+        .dmg-section {
+            display: none;
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px dashed #444;
+            border-radius: 4px;
+            background: #0d1117;
+        }
+
+        .dmg-section.active {
+            display: block !important;
+        }
+
+        .result-panel {
+            background: #010409;
+            border: 2px solid var(--accent);
+            padding: 20px;
+            margin-top: 20px;
+            border-radius: 8px;
+        }
+
+        .summary-header {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .header-val {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--accent);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            text-align: left;
+            color: #8b949e;
+            font-size: 0.7rem;
+            padding: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #21262d;
+        }
+
+        .log-box {
+            font-size: 0.75rem;
+            color: #aaa;
+            background: #111;
+            padding: 12px;
+            border-radius: 4px;
+            margin-top: 15px;
+            line-height: 1.6;
+            border-left: 4px solid var(--elem);
+            max-height: 180px;
+            overflow-y: auto;
+        }
+
+        .log-entry {
+            margin-bottom: 3px;
+            border-bottom: 1px solid #222;
+            padding-bottom: 2px;
+        }
     </style>
 </head>
+
 <body>
 
-<div class="container">
-    <h1>明日方舟傷害計算器 <small style="font-weight:normal; font-size:0.5em; color:#8b949e;">Hybrid System v3.0</small></h1>
+    <div class="container">
+        <div class="switch-container">
+            <b>傷害類型開關：</b>
+            <label><input type="checkbox" id="tP" checked onchange="updateUI()"> 物理</label>
+            <label><input type="checkbox" id="tA" checked onchange="updateUI()"> 法術</label>
+            <label><input type="checkbox" id="tT" onchange="updateUI()"> 真實</label>
+            <label><input type="checkbox" id="tE" onchange="updateUI()"> 元素</label>
+        </div>
 
-    <div class="grid">
-        <div class="card">
-            <h2>幹員基礎與加成 (Buffs)</h2>
-            <div class="input-group">
-                <label>基礎攻擊力 (數值)</label>
-                <input type="number" id="baseAtk" value="874">
+        <div class="grid">
+            <div class="card">
+                <h2>基礎面板與通用加成</h2>
+                <div class="input-group"><label>基礎攻擊力</label><input type="number" id="baseAtk" value="874"></div>
+                <div class="input-group"><label>局外/局內加成 % (每行一個)</label><textarea id="allBuff">0</textarea></div>
+                <div class="input-group"><label>鼓舞效果 (固定值)</label><input type="number" id="inspired" value="0"></div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+                    <div class="input-group"><label>原始間隔 (秒)</label><input type="number" id="baseInt" value="1.3"></div>
+                    <div class="input-group"><label>攻速 ASPD</label><textarea id="aspd">28</textarea></div>
+                </div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+                    <div class="input-group"><label>攻擊段數</label><input type="number" id="hits" value="2"></div>
+                    <div class="input-group"><label>技能時長 (秒)</label><input type="number" id="duration" value="25"></div>
+                </div>
             </div>
-            <div class="input-group">
-                <label>局外藏品 % (如束靈骨, 每行一個)</label>
-                <textarea id="outBuffList">0</textarea>
+
+            <div class="card">
+                <h2>技能獨立參數</h2>
+                <div id="secP" class="dmg-section active">
+                    <b style="color:var(--phys)">[物理參數]</b>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px; margin-top:5px;">
+                        <div class="input-group"><label>攻擊加成 %</label><input type="number" id="bP" value="0"></div>
+                        <div class="input-group"><label>倍率 %</label><input type="number" id="sP" value="220"></div>
+                    </div>
+                    <div class="input-group"><label>附加傷害 (數值)</label><input type="number" id="fP" value="0"></div>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px;">
+                        <div class="input-group"><label>敵方 DEF</label><input type="number" id="def" value="0"></div>
+                        <div class="input-group"><label>穿透 %</label><input type="number" id="ignP" value="0"></div>
+                    </div>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px;">
+                        <div class="input-group"><label>物理脆弱 %</label><input type="number" id="fraP" value="0"></div>
+                        <div class="input-group"><label>物理減傷 %</label><input type="number" id="redP" value="0"></div>
+                    </div>
+                </div>
+                <div id="secA" class="dmg-section active">
+                    <b style="color:var(--arts)">[法術參數]</b>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px; margin-top:5px;">
+                        <div class="input-group"><label>攻擊加成 %</label><input type="number" id="bA" value="0"></div>
+                        <div class="input-group"><label>倍率 %</label><input type="number" id="sA" value="220"></div>
+                    </div>
+                    <div class="input-group"><label>附加傷害 (數值)</label><input type="number" id="fA" value="0"></div>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px;">
+                        <div class="input-group"><label>敵方 RES</label><input type="number" id="res" value="0"></div>
+                        <div class="input-group"><label>穿透 %</label><input type="number" id="ignA" value="0"></div>
+                    </div>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px;">
+                        <div class="input-group"><label>法術脆弱 %</label><input type="number" id="fraA" value="0"></div>
+                        <div class="input-group"><label>法術減傷 %</label><input type="number" id="redA" value="0"></div>
+                    </div>
+                </div>
+                <div id="secT" class="dmg-section">
+                    <b style="color:var(--true)">[真實參數]</b>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px; margin-top:5px;">
+                        <div class="input-group"><label>攻擊加成 %</label><input type="number" id="bT" value="0"></div>
+                        <div class="input-group"><label>倍率 %</label><input type="number" id="sT" value="0"></div>
+                    </div>
+                    <div class="input-group"><label>附加傷害 (數值)</label><input type="number" id="fT" value="0"></div>
+                </div>
             </div>
-            <div class="input-group">
-                <label>局內藏品/天賦 % (每行一個)</label>
-                <textarea id="inBuffList">0</textarea>
-            </div>
-            <div class="input-group">
-                <label>鼓舞效果 (數值加算, 如濁蒂)</label>
-                <input type="number" id="inspired" value="0">
+
+            <div class="card">
+                <h2>元素模擬 & 怪物設定</h2>
+                <div id="secE" class="dmg-section">
+                    <label>損傷類型</label>
+                    <select id="eType">
+                        <option value="neuro">神經 (10s 狀態 / 6000 傷)</option>
+                        <option value="burn" selected>灼燃 (10s 狀態 / 7000 傷 / -20 RES)</option>
+                        <option value="necrosis">凋亡 (15s 狀態 / 每秒 800 DoT)</option>
+                    </select>
+                    <div class="input-group" style="margin-top:8px;">
+                        <label>CD 恢復速度提升 % (加速免疫期重置)</label>
+                        <input type="number" id="eCDRec" value="0">
+                    </div>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px;">
+                        <div class="input-group"><label>加成 %</label><input type="number" id="bE" value="0"></div>
+                        <div class="input-group"><label>倍率 %</label><input type="number" id="sE" value="50"></div>
+                    </div>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px;">
+                        <div class="input-group"><label>附加損傷</label><input type="number" id="fE" value="0"></div>
+                        <div class="input-group"><label>領域/秒損傷 %</label><input type="number" id="fieldE" value="0">
+                        </div>
+                    </div>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px;">
+                        <div class="input-group"><label>EP 上限</label><input type="number" id="eMax" value="1000"></div>
+                        <div class="input-group"><label>損傷抵抗</label><input type="number" id="eDef" value="0"></div>
+                    </div>
+                    <div class="input-group"><label>元素抗性 %</label><input type="number" id="eRes" value="0"></div>
+                </div>
+                <hr style="border:0; border-top:1px solid #333; margin:10px 0;">
+                <div class="input-group"><label>怪物攻擊間隔 (秒)</label><input type="number" id="enAtkInt" value="2.0"></div>
             </div>
         </div>
 
-        <div class="card">
-            <h2>技能特性 (Skill Specs)</h2>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                <div class="input-group">
-                    <label>倍率 %</label>
-                    <input type="number" id="atkScale" value="220">
+        <div class="result-panel">
+            <div class="summary-header">
+                <div class="header-item">面板 ATK: <span id="rAtk" class="header-val">0</span></div>
+                <div class="header-item">間隔: <span id="rInt" class="header-val">0s</span> (<span id="rF">0</span>F)
                 </div>
-                <div class="input-group">
-                    <label>額外攻擊力增幅 %</label>
-                    <input type="number" id="atkBoost" value="0">
-                </div>
+                <div class="header-item">技能總傷: <span id="rTotal" class="header-val" style="color:#f2c94c">0</span></div>
             </div>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                <div class="input-group">
-                    <label>原始間隔 (秒)</label>
-                    <input type="number" id="baseInterval" value="1.3">
-                </div>
-                <div class="input-group">
-                    <label>間隔縮短 (秒, 如能天使)</label>
-                    <input type="number" id="intReduc" value="0">
-                </div>
-            </div>
-            <div class="input-group">
-                <label>攻速加成 ASPD (每行一個)</label>
-                <textarea id="aspdList">28</textarea>
-            </div>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                <div class="input-group">
-                    <label>攻擊段數</label>
-                    <input type="number" id="hits" value="2">
-                </div>
-                <div class="input-group">
-                    <label>持續時間 (秒)</label>
-                    <input type="number" id="duration" value="25">
-                </div>
-            </div>
-        </div>
-
-        <div class="card">
-            <h2>敵方屬性 & 額外乘區</h2>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                <div class="input-group">
-                    <label>防禦力 (DEF)</label>
-                    <input type="number" id="enemyDef" value="0">
-                </div>
-                <div class="input-group">
-                    <label>法術抗性 (RES)</label>
-                    <input type="number" id="enemyRes" value="0">
-                </div>
-            </div>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                <div class="input-group">
-                    <label>物理穿透 % (無視)</label>
-                    <input type="number" id="defIgn" value="0">
-                </div>
-                <div class="input-group">
-                    <label>法抗穿透 % (無視)</label>
-                    <input type="number" id="resIgn" value="0">
-                </div>
-            </div>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                <div class="input-group">
-                    <label>脆弱 % (受傷提升)</label>
-                    <input type="number" id="fragile" value="0">
-                </div>
-                <div class="input-group">
-                    <label>敵方減傷/庇護 %</label>
-                    <input type="number" id="dmgRed" value="0">
-                </div>
-            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>類型</th>
+                        <th>單次 (DPH)</th>
+                        <th>秒傷 (DPS)</th>
+                        <th>總傷害</th>
+                    </tr>
+                </thead>
+                <tbody id="resBody">
+                    <tr id="rowPhys" style="color:var(--phys)">
+                        <td>物理</td>
+                        <td id="oDphP">0</td>
+                        <td id="oDpsP">0</td>
+                        <td id="oTotP">0</td>
+                    </tr>
+                    <tr id="rowArts" style="color:var(--arts)">
+                        <td>法術</td>
+                        <td id="oDphA">0</td>
+                        <td id="oDpsA">0</td>
+                        <td id="oTotA">0</td>
+                    </tr>
+                    <tr id="rowTrue" style="color:var(--true)">
+                        <td>真實</td>
+                        <td id="oDphT">0</td>
+                        <td id="oDpsT">0</td>
+                        <td id="oTotT">0</td>
+                    </tr>
+                    <tr id="rowElem" style="color:var(--elem)">
+                        <td>元素</td>
+                        <td>-</td>
+                        <td id="oDpsE">0</td>
+                        <td id="oTotE">0</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div id="log" class="log-box">等待計算日誌...</div>
         </div>
     </div>
 
-    <div class="result-panel">
-        <div class="summary-header">
-            <div class="header-item">
-                <span class="header-label">攻擊力面板 (ATK)</span>
-                <span class="header-val" id="resFinalAtk">0</span>
-            </div>
-            <div class="header-item">
-                <span class="header-label">實際攻擊間隔</span>
-                <span class="header-val" id="resInterval">0s</span>
-            </div>
-            <div class="header-item">
-                <span class="header-label">總幀數 (30 FPS)</span>
-                <span class="header-val" id="resFrame">0F</span>
-            </div>
-            <div class="header-item">
-                <span class="header-label">攻擊次數</span>
-                <span class="header-val" id="resAttackCount">0</span>
-            </div>
-        </div>
+    <script>
+        const allInput = document.querySelectorAll('input, textarea, select');
+        allInput.forEach(el => el.addEventListener('input', calculate));
 
-        <table class="res-table">
-            <thead>
-                <tr>
-                    <th>傷害類型</th>
-                    <th>單次傷害 (DPH)</th>
-                    <th>秒傷 (DPS)</th>
-                    <th>技能期總傷害</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr class="phys-text">
-                    <td>物理傷害 (Physical)</td>
-                    <td id="physDPH">0</td>
-                    <td id="physDPS">0</td>
-                    <td id="physTotal">0</td>
-                </tr>
-                <tr class="arts-text">
-                    <td>法術傷害 (Arts)</td>
-                    <td id="artsDPH">0</td>
-                    <td id="artsDPS">0</td>
-                    <td id="artsTotal">0</td>
-                </tr>
-                <tr class="true-text">
-                    <td>真實傷害 (True)</td>
-                    <td id="trueDPH">0</td>
-                    <td id="trueDPS">0</td>
-                    <td id="trueTotal">0</td>
-                </tr>
-                <tr class="total-text">
-                    <td>技能總計 (Combined)</td>
-                    <td id="totalDPH">0</td>
-                    <td id="totalDPS">0</td>
-                    <td id="totalTotal">0</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-</div>
+        function updateUI() {
+            // P=Phys, A=Arts, T=True, E=Elem
+            const map = { 'P': 'Phys', 'A': 'Arts', 'T': 'True', 'E': 'Elem' };
+            Object.keys(map).forEach(key => {
+                const active = document.getElementById('t' + key).checked;
+                const section = document.getElementById('sec' + key);
+                const row = document.getElementById('row' + map[key]);
 
-<script>
-    const inputs = document.querySelectorAll('input, textarea');
-    inputs.forEach(el => el.addEventListener('input', calculate));
+                if (active) {
+                    section.classList.add('active');
+                    row.style.display = 'table-row';
+                } else {
+                    section.classList.remove('active');
+                    row.style.display = 'none';
+                }
+            });
+            calculate();
+        }
 
-    function getSum(id) {
-        const val = document.getElementById(id).value;
-        return val.split(/[\s\n,]+/).map(n => parseFloat(n)).filter(n => !isNaN(n)).reduce((a, b) => a + b, 0);
-    }
+        function getS(id) {
+            const val = document.getElementById(id).value;
+            return val ? val.split(/[\s\n,]+/).map(n => parseFloat(n)).filter(n => !isNaN(n)).reduce((a, b) => a + b, 0) : 0;
+        }
 
-    function calculate() {
-        // 1. 基礎參數收集
-        const baseAtk = parseFloat(document.getElementById('baseAtk').value) || 0;
-        const outBuff = getSum('outBuffList') / 100;
-        const inBuff = getSum('inBuffList') / 100;
-        const inspired = parseFloat(document.getElementById('inspired').value) || 0;
-        const atkScale = parseFloat(document.getElementById('atkScale').value) / 100;
-        const atkBoost = parseFloat(document.getElementById('atkBoost').value) / 100;
-        
-        const baseInterval = parseFloat(document.getElementById('baseInterval').value) || 1.3;
-        const intReduc = parseFloat(document.getElementById('intReduc').value) || 0;
-        const aspd = 100 + getSum('aspdList');
-        const hits = parseInt(document.getElementById('hits').value) || 1;
-        const duration = parseFloat(document.getElementById('duration').value) || 0;
+        function calculate() {
+            // 1. 基礎
+            const baseAtk = parseFloat(document.getElementById('baseAtk').value) || 0;
+            const panelAtk = baseAtk * (1 + getS('allBuff') / 100);
+            const inspired = parseFloat(document.getElementById('inspired').value) || 0;
+            const frames = Math.max(1, Math.round((parseFloat(document.getElementById('baseInt').value) / ((100 + getS('aspd')) / 100)) * 30));
+            const rInt = frames / 30, duration = parseFloat(document.getElementById('duration').value) || 0;
+            const hits = parseInt(document.getElementById('hits').value) || 1, enInt = parseFloat(document.getElementById('enAtkInt').value) || 1;
 
-        const enemyDef = parseFloat(document.getElementById('enemyDef').value) || 0;
-        const enemyRes = parseFloat(document.getElementById('enemyRes').value) || 0;
-        const defIgn = parseFloat(document.getElementById('defIgn').value) / 100;
-        const resIgn = parseFloat(document.getElementById('resIgn').value) / 100;
-        const fragile = 1 + (parseFloat(document.getElementById('fragile').value) / 100);
-        const dmgRed = 1 - (parseFloat(document.getElementById('dmgRed').value) / 100);
+            // 2. 元素
+            const eType = document.getElementById('eType').value;
+            const eMax = parseFloat(document.getElementById('eMax').value) || 1000;
+            const eDef = 1 - (parseFloat(document.getElementById('eDef').value) / 100);
+            const eResM = 1 - (parseFloat(document.getElementById('eRes').value) / 100);
+            const eCDRec = 1 + (parseFloat(document.getElementById('eCDRec').value) / 100);
 
-        // 2. 核心邏輯 - 攻擊力流水線
-        // 方舟公式：((Base * (1 + 局外)) * (1 + 局內 + 技能加攻) + 鼓舞) * 倍率
-        let atkStep1 = baseAtk * (1 + outBuff);
-        let atkStep2 = atkStep1 * (1 + inBuff + atkBoost);
-        let finalAtk = (atkStep2 + inspired) * atkScale;
+            const burstLimit = (eType === 'necrosis' ? 15 : 10);
+            const cdLimit = burstLimit / eCDRec;
 
-        // 3. 核心邏輯 - 幀數補正 (30 FPS)
-        // Interval = (BaseInterval - Reduction) / (ASPD / 100)
-        let rawInterval = (baseInterval - intReduc) / (aspd / 100);
-        let frames = Math.round(rawInterval * 30);
-        if (frames < 1) frames = 1;
-        let realInterval = frames / 30;
-        let attackCount = Math.floor(duration / realInterval);
+            const eAtkBuild = ((panelAtk * (1 + parseFloat(document.getElementById('bE').value) / 100) + inspired) * (parseFloat(document.getElementById('sE').value) / 100) + parseFloat(document.getElementById('fE').value)) * eDef * hits;
+            const eFieldSec = (panelAtk * (parseFloat(document.getElementById('fieldE').value) / 100)) * eDef;
 
-        // 4. 抗性 Pipeline
-        let effDef = enemyDef * (1 - defIgn);
-        let effRes = enemyRes * (1 - resIgn);
-        const globalMult = fragile * dmgRed;
+            let curEP = eMax, immuneTimer = 0, effectTimer = 0, totalE = 0;
+            let logs = [], bursts = 0, pTot = 0, aTot = 0, tTot = 0;
 
-        // 5. 三路傷害計算
-        // 物理 (含 5% 保底)
-        let physSingle = Math.max(finalAtk - effDef, finalAtk * 0.05) * globalMult;
-        let physDPH = physSingle * hits;
-        
-        // 法術 (含 5% 保底)
-        let artsSingle = Math.max(finalAtk * (1 - effRes/100), finalAtk * 0.05) * globalMult;
-        let artsDPH = artsSingle * hits;
-        
-        // 真實 (無無視，受脆弱/減傷影響)
-        let trueDPH = finalAtk * hits * globalMult;
+            // 3. 模擬
+            // --- 元素模擬核心邏輯修復 ---
+            for (let f = 0; f < duration * 30; f++) {
+                let t = f / 30;
+                let isAtk = (f % frames === 0);
+                let resDebuff = 0;
 
-        // 6. 匯總
-        let totalDPH = physDPH + artsDPH + trueDPH;
+                // 1. 處理效果存續期 (Debuff & Necrosis DoT)
+                if (effectTimer > 0) {
+                    if (eType === 'burn') resDebuff = 20; // 灼燃減抗 20
+                    if (eType === 'necrosis') {
+                        // 凋亡每幀產生的 True Damage (800/30)
+                        totalE += (800 * eResM) / 30;
+                    }
+                    effectTimer -= 1 / 30;
+                }
 
-        // 7. 更新渲染
-        document.getElementById('resFinalAtk').innerText = Math.round(finalAtk);
-        document.getElementById('resInterval').innerText = realInterval.toFixed(3) + "s";
-        document.getElementById('resFrame').innerText = frames;
-        document.getElementById('resAttackCount').innerText = attackCount;
+                // 2. 處理累積期與爆發觸發
+                if (immuneTimer <= 0) {
+                    // 累積損傷 (每幀扣減 EP)
+                    curEP -= eFieldSec / 30;
+                    if (isAtk) curEP -= eAtkBuild;
 
-        // 填入表格
-        const updateRow = (idPrefix, dph) => {
-            document.getElementById(idPrefix + 'DPH').innerText = Math.round(dph).toLocaleString();
-            document.getElementById(idPrefix + 'DPS').innerText = Math.round(dph / realInterval).toLocaleString();
-            document.getElementById(idPrefix + 'Total').innerText = Math.round(dph * attackCount).toLocaleString();
-        };
+                    if (curEP <= 0) {
+                        bursts++;
+                        // 設定免疫期與效果期 (通常相同，受 CD 恢復速度影響)
+                        const burstDuration = (eType === 'necrosis' ? 15 : 10);
+                        immuneTimer = burstDuration / eCDRec;
+                        effectTimer = burstDuration;
 
-        updateRow('phys', physDPH);
-        updateRow('arts', artsDPH);
-        updateRow('true', trueDPH);
-        updateRow('total', totalDPH);
-    }
+                        // 執行單次爆發傷害 (灼燃 7000, 神經 6000)
+                        if (eType === 'burn') totalE += 7000 * eResM;
+                        // --- 神經損傷控制邏輯修復 ---
+                        if (eType === 'neuro') {
+                            // 1. 結算 6000 點單次元素傷害
+                            totalE += 6000 * eResM;
 
-    calculate(); // 初始化
-</script>
+                            // 2. 計算控制時長：3 倍於敵方攻擊間隔
+                            // 注意：這裡使用的是輸入框中的 enAtkInt (怪物攻擊間隔)
+                            const enemyInt = parseFloat(document.getElementById('enAtkInt').value) || 2.0;
+                            const neuroControlDuration = 3 * enemyInt;
+
+                            // 3. 進入免疫期與控制期
+                            // 根據 v6.4 邏輯，免疫期與控制期通常同步
+                            immuneTimer = neuroControlDuration / eCDRec;
+                            effectTimer = neuroControlDuration;
+
+                            // 4. 日誌記錄 (增加精確度)
+                            logs.push(`
+                                <div class="log-entry" style="border-left: 2px solid #ff7b72">
+                                    [${t.toFixed(2)}s] <b>神經爆發</b>：造成 ${Math.round(6000 * eResM)} 傷害。
+                                    <br>└ 敵人陷入麻痺，時長 ${neuroControlDuration.toFixed(2)}s (3x 間隔)。
+                                </div>
+                            `);
+                        }
+
+                        // 日誌記錄
+                        let logMsg = `[${t.toFixed(2)}s] 爆發 #${bursts} (${eType})`;
+                        logs.push(`<div class="log-entry">${logMsg}</div>`);
+
+                        curEP = eMax; // 重置 EP 條
+                    }
+                } else {
+                    immuneTimer -= 1 / 30;
+                }
+
+                if (effectTimer > 0) {
+                    if (eType === 'burn') resDebuff = 20;
+                    if (eType === 'necrosis') totalE += (800 * eResM) / 30;
+                    effectTimer -= 1 / 30;
+                }
+
+                if (isAtk) {
+                    if (document.getElementById('tP').checked) {
+                        let a = (panelAtk * (1 + parseFloat(document.getElementById('bP').value) / 100)) + inspired;
+                        let d = (parseFloat(document.getElementById('def').value) || 0) * (1 - parseFloat(document.getElementById('ignP').value) / 100);
+                        let dmg = Math.max((a * parseFloat(document.getElementById('sP').value) / 100 + parseFloat(document.getElementById('fP').value)) - d, a * 0.05);
+                        pTot += dmg * hits * (1 + parseFloat(document.getElementById('fraP').value) / 100) * (1 - parseFloat(document.getElementById('redP').value) / 100);
+                    }
+                    if (document.getElementById('tA').checked) {
+                        let a = (panelAtk * (1 + parseFloat(document.getElementById('bA').value) / 100)) + inspired;
+                        let r = Math.max(0, (parseFloat(document.getElementById('res').value) || 0) - resDebuff) * (1 - parseFloat(document.getElementById('ignA').value) / 100);
+                        let dmg = Math.max((a * parseFloat(document.getElementById('sA').value) / 100 + parseFloat(document.getElementById('fA').value)) * (1 - r / 100), a * 0.05);
+                        aTot += dmg * hits * (1 + parseFloat(document.getElementById('fraA').value) / 100) * (1 - parseFloat(document.getElementById('redA').value) / 100);
+                    }
+                    if (document.getElementById('tT').checked) {
+                        let a = (panelAtk * (1 + parseFloat(document.getElementById('bT').value) / 100)) + inspired;
+                        tTot += (a * parseFloat(document.getElementById('sT').value) / 100 + parseFloat(document.getElementById('fT').value)) * hits;
+                    }
+                }
+            }
+
+            // 4. UI 渲染
+            document.getElementById('rAtk').innerText = Math.round(panelAtk + inspired);
+            document.getElementById('rInt').innerText = rInt.toFixed(3) + "s";
+            document.getElementById('rF').innerText = frames;
+            const setR = (id, tot) => {
+                const count = duration / rInt;
+                document.getElementById('oDph' + id).innerText = Math.round(tot / count || 0).toLocaleString();
+                document.getElementById('oDps' + id).innerText = Math.round(tot / duration || 0).toLocaleString();
+                document.getElementById('oTot' + id).innerText = Math.round(tot).toLocaleString();
+            };
+            setR('P', pTot); setR('A', aTot); setR('T', tTot);
+            document.getElementById('oDpsE').innerText = Math.round(totalE / duration || 0).toLocaleString();
+            document.getElementById('oTotE').innerText = Math.round(totalE).toLocaleString();
+            let grand = pTot + aTot + tTot + totalE;
+            document.getElementById('rTotal').innerText = Math.round(grand).toLocaleString();
+            document.getElementById('log').innerHTML = logs.length ? logs.join('') : "未觸發爆發。";
+        }
+        updateUI();
+    </script>
 </body>
+
 </html>
