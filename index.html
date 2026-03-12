@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>明日方舟計算器 - v6.4 UI 完全修復版</title>
+    <title>明日方舟計算器</title>
     <style>
         :root {
             --bg: #0d1117;
@@ -275,6 +275,10 @@
                 <div class="header-item">面板 ATK: <span id="rAtk" class="header-val">0</span></div>
                 <div class="header-item">間隔: <span id="rInt" class="header-val">0s</span> (<span id="rF">0</span>F)
                 </div>
+                <div class="header-item">綜合 DPH: <span id="rDph" class="header-val" style="color:var(--accent)">0</span>
+                </div>
+                <div class="header-item">綜合 DPS: <span id="rDps" class="header-val" style="color:var(--elem)">0</span>
+                </div>
                 <div class="header-item">技能總傷: <span id="rTotal" class="header-val" style="color:#f2c94c">0</span></div>
             </div>
             <table>
@@ -457,7 +461,7 @@
                 }
             }
 
-            // 5. 渲染與最終結果計算
+            // --- 5. 渲染與最終結果計算 ---
             document.getElementById('rAtk').innerText = Math.round(panelAtk + inspired);
             document.getElementById('rInt').innerText = rInt.toFixed(3) + "s";
             document.getElementById('rF').innerText = frames;
@@ -465,23 +469,39 @@
             const setRow = (id, active, tot) => {
                 const val = active ? tot : 0;
                 const count = duration / rInt;
-                document.getElementById('oDph' + id).innerText = Math.round(val / count || 0).toLocaleString();
-                document.getElementById('oDps' + id).innerText = Math.round(val / duration || 0).toLocaleString();
+                const dph = Math.round(val / count || 0);
+                const dps = Math.round(val / duration || 0);
+
+                document.getElementById('oDph' + id).innerText = dph.toLocaleString();
+                document.getElementById('oDps' + id).innerText = dps.toLocaleString();
                 document.getElementById('oTot' + id).innerText = Math.round(val).toLocaleString();
-                return val;
+
+                return { val, dph, dps };
             };
 
-            const finalP = setRow('P', isP, pTot);
-            const finalA = setRow('A', isA, aTot);
-            const finalT = setRow('T', isT, tTot);
+            // 計算各類型並取得物件
+            const resP = setRow('P', isP, pTot);
+            const resA = setRow('A', isA, aTot);
+            const resT = setRow('T', isT, tTot);
 
             // 元素特別渲染
             const finalE = isE ? totalE : 0;
-            document.getElementById('oDpsE').innerText = Math.round(finalE / duration || 0).toLocaleString();
+            const dpsE = Math.round(finalE / duration || 0);
+            document.getElementById('oDpsE').innerText = dpsE.toLocaleString();
             document.getElementById('oTotE').innerText = Math.round(finalE).toLocaleString();
 
-            // 總傷害 (Grand Total) 僅加總已勾選類型
-            const grandTotal = finalP + finalA + finalT + finalE;
+            // --- 綜合指標計算 ---
+
+            // 綜合 DPH：物理+法術+真實 (代表每一次攻擊的總合出力)
+            const grandDph = resP.dph + resA.dph + resT.dph;
+
+            // 綜合 DPS：所有傷害類型總合 / 時長
+            const grandTotal = resP.val + resA.val + resT.val + finalE;
+            const grandDps = Math.round(grandTotal / duration || 0);
+
+            // 更新到 Summary Header
+            document.getElementById('rDph').innerText = grandDph.toLocaleString();
+            document.getElementById('rDps').innerText = grandDps.toLocaleString();
             document.getElementById('rTotal').innerText = Math.round(grandTotal).toLocaleString();
 
             // 日誌處理
