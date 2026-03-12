@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>明日方舟數值邏輯計算器</title>
+    <style>
+        :root {
+            --bg: #121212;
+            --card-bg: #1e1e1e;
+            --accent: #00e5ff;
+            --text: #e0e0e0;
+            --border: #333;
+            --atk-color: #ff5252;
+            --def-color: #ffab40;
+            --res-color: #448aff;
+        }
+
+        body {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background: var(--bg);
+            color: var(--text);
+            padding: 20px;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            border-left: 5px solid var(--accent);
+            padding-left: 15px;
+            font-size: 1.5rem;
+        }
+
+        /* 佈局架構 */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+        }
+
+        h2 {
+            font-size: 1.1rem;
+            color: var(--accent);
+            margin-top: 0;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
+        }
+
+        /* 表單樣式 */
+        .input-group {
+            margin-bottom: 12px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        label {
+            font-size: 0.85rem;
+            color: #888;
+            margin-bottom: 4px;
+        }
+
+        input {
+            background: #000;
+            border: 1px solid var(--border);
+            color: #fff;
+            padding: 8px;
+            border-radius: 2px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        input:focus {
+            border-color: var(--accent);
+            outline: none;
+        }
+
+        /* 結果顯示區 */
+        .result-panel {
+            background: #000;
+            padding: 25px;
+            border: 2px solid var(--accent);
+            border-radius: 4px;
+        }
+
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .stat-box {
+            border-left: 2px solid #444;
+            padding-left: 15px;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #888;
+        }
+
+        .stat-value {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .highlight {
+            color: var(--accent);
+        }
+
+        .formula-box {
+            margin-top: 20px;
+            font-size: 0.75rem;
+            color: #666;
+            background: #111;
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        hr {
+            border: 0;
+            border-top: 1px solid var(--border);
+            margin: 15px 0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>明日方舟傷害計算器 (Integrated Strategy Logic)</h1>
+
+        <div class="grid">
+            <div class="card">
+                <h2>幹員數據 (Operator)</h2>
+                <div class="input-group">
+                    <label>基礎攻擊力 (等級/信賴/潛能/模組)</label>
+                    <input type="number" id="baseAtk" value="1000">
+                </div>
+                <div class="input-group">
+                    <label>局外加成 % (束靈骨 / 老蒲扇)</label>
+                    <input type="number" id="outBuff" value="0">
+                </div>
+                <div class="input-group">
+                    <label>局內加成 % (技能 / 國王套 / 一般藏品)</label>
+                    <input type="number" id="inBuff" value="0">
+                </div>
+                <div class="input-group">
+                    <label>最終倍率 % (提升至 X% 攻擊力)</label>
+                    <input type="number" id="atkScale" value="100">
+                </div>
+                <div class="input-group">
+                    <label>攻擊段數 (Multi-hits per Attack)</label>
+                    <input type="number" id="hits" value="1">
+                </div>
+                <hr>
+                <div class="input-group">
+                    <label>原始攻擊間隔 (秒)</label>
+                    <input type="number" id="baseInterval" value="1.5" step="0.1">
+                </div>
+                <div class="input-group">
+                    <label>攻速加成 (ASPD)</label>
+                    <input type="number" id="aspd" value="0">
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>敵方屬性 (Enemy)</h2>
+                <div class="input-group">
+                    <label>防禦力 (DEF) / 法術抗性 (RES)</label>
+                    <div class="input-row">
+                        <input type="number" id="enemyDef" value="500" placeholder="DEF">
+                        <input type="number" id="enemyRes" value="30" placeholder="RES">
+                    </div>
+                </div>
+                <hr>
+                <div class="input-group">
+                    <label>防禦削減 (數值削減 / 比例削減 %)</label>
+                    <div class="input-row">
+                        <input type="number" id="defRedFlat" value="0" placeholder="數值">
+                        <input type="number" id="defRedPerc" value="0" placeholder="%">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>物理穿透 (數值無視 / 比例無視 %)</label>
+                    <div class="input-row">
+                        <input type="number" id="defIgnFlat" value="0" placeholder="數值">
+                        <input type="number" id="defIgnPerc" value="0" placeholder="%">
+                    </div>
+                </div>
+                <hr>
+                <div class="input-group">
+                    <label>法抗削減 (比例 %) / 法抗穿透 (比例 %)</label>
+                    <div class="input-row">
+                        <input type="number" id="resRedPerc" value="0" placeholder="削減 %">
+                        <input type="number" id="resIgnPerc" value="0" placeholder="穿透 %">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>脆弱 % / 敵方受傷減免 % (庇護)</label>
+                    <div class="input-row">
+                        <input type="number" id="fragile" value="0" placeholder="脆弱 %">
+                        <input type="number" id="dmgRed" value="0" placeholder="減免 %">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="result-panel">
+            <h2>即時計算結果</h2>
+            <div class="result-grid">
+                <div class="stat-box">
+                    <div class="stat-label">單次攻擊總面板 (ATK)</div>
+                    <div class="stat-value highlight" id="resFinalAtk">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">實際間隔 (Frame Aligned)</div>
+                    <div class="stat-value" id="resInterval">0s</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">物理單次傷害 (總段數)</div>
+                    <div class="stat-value" style="color:var(--atk-color)" id="resPhysDmg">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">法術單次傷害 (總段數)</div>
+                    <div class="stat-value" style="color:var(--res-color)" id="resArtsDmg">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">物理 DPS</div>
+                    <div class="stat-value highlight" id="resPhysDps">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">法術 DPS</div>
+                    <div class="stat-value highlight" id="resArtsDps">0</div>
+                </div>
+            </div>
+
+            <div class="formula-box">
+                <p><strong>邏輯連鎖提示：</strong></p>
+                <ul>
+                    <li><strong>攻擊力：</strong>(基礎 * 局外倍率) * (1 + 局內加成%) * 技能倍率。局外加成在肉鴿中能有效放大技能基數。</li>
+                    <li><strong>防禦 Pipeline：</strong>優先計算【削減】，再計算【無視（穿透）】。當 DEF > ATK 時，觸發 5% 保底。</li>
+                    <li><strong>幀率修正：</strong>基於 30 FPS。攻擊間隔必須為 1/30s 的倍數。</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const inputs = document.querySelectorAll('input');
+        inputs.forEach(input => input.addEventListener('input', calculate));
+
+        function calculate() {
+            // 1. 讀取幹員數值
+            const baseAtk = parseFloat(document.getElementById('baseAtk').value) || 0;
+            const outBuff = 1 + (parseFloat(document.getElementById('outBuff').value) / 100);
+            const inBuff = 1 + (parseFloat(document.getElementById('inBuff').value) / 100);
+            const atkScale = parseFloat(document.getElementById('atkScale').value) / 100;
+            const hits = Math.max(1, parseInt(document.getElementById('hits').value) || 1);
+            const baseInterval = parseFloat(document.getElementById('baseInterval').value) || 1;
+            const aspd = parseFloat(document.getElementById('aspd').value) || 0;
+
+            // 2. 讀取敵方數值
+            const enemyDef = parseFloat(document.getElementById('enemyDef').value) || 0;
+            const enemyRes = parseFloat(document.getElementById('enemyRes').value) || 0;
+            const defRedFlat = parseFloat(document.getElementById('defRedFlat').value) || 0;
+            const defRedPerc = parseFloat(document.getElementById('defRedPerc').value) / 100;
+            const defIgnFlat = parseFloat(document.getElementById('defIgnFlat').value) || 0;
+            const defIgnPerc = parseFloat(document.getElementById('defIgnPerc').value) / 100;
+            const resRedPerc = parseFloat(document.getElementById('resRedPerc').value) / 100;
+            const resIgnPerc = parseFloat(document.getElementById('resIgnPerc').value) / 100;
+            const fragile = 1 + (parseFloat(document.getElementById('fragile').value) / 100);
+            const dmgRed = 1 - (parseFloat(document.getElementById('dmgRed').value) / 100);
+
+            // 3. 核心攻擊力計算 (層次模型)
+            // 第一層：基礎 * 局外 (這會改變技能計算的基數)
+            let step1 = baseAtk * outBuff;
+            // 第二層：應用局內加成
+            let step2 = step1 * inBuff;
+            // 第三層：應用技能倍率
+            let finalAtk = step2 * atkScale;
+
+            // 4. 攻擊間隔與幀數補正 (30 FPS)
+            let rawInterval = baseInterval / (1 + aspd / 100);
+            let frames = Math.round(rawInterval * 30);
+            if (frames < 1) frames = 1;
+            let realInterval = frames / 30;
+
+            // 5. 敵方抗性 Pipeline 計算
+            // 物理：(Def - 數值削減) * (1 - 比例削減) -> (結果 - 數值穿透) * (1 - 比例穿透)
+            let effDef = (enemyDef - defRedFlat) * (1 - defRedPerc);
+            effDef = Math.max(0, (effDef - defIgnFlat) * (1 - defIgnPerc));
+
+            // 法術：(Res * (1 - 削減%)) * (1 - 穿透%)
+            let effRes = (enemyRes * (1 - resRedPerc)) * (1 - resIgnPerc);
+            effRes = Math.max(0, Math.min(100, effRes));
+
+            // 6. 傷害計算 (含保底與段數)
+            const minDmg = finalAtk * 0.05;
+            const totalFragile = fragile * dmgRed;
+
+            // 物理單次攻擊 (多段)
+            let singlePhys = Math.max(finalAtk - effDef, minDmg) * totalFragile;
+            let totalPhys = singlePhys * hits;
+
+            // 法術單次攻擊 (多段)
+            let singleArts = Math.max(finalAtk * (1 - effRes / 100), minDmg) * totalFragile;
+            let totalArts = singleArts * hits;
+
+            // 7. 更新 UI
+            document.getElementById('resFinalAtk').innerText = Math.round(finalAtk);
+            document.getElementById('resInterval').innerText = realInterval.toFixed(3) + "s (" + frames + "F)";
+            document.getElementById('resPhysDmg').innerText = Math.round(totalPhys) + ` (${Math.round(singlePhys)}x${hits})`;
+            document.getElementById('resArtsDmg').innerText = Math.round(totalArts) + ` (${Math.round(singleArts)}x${hits})`;
+            document.getElementById('resPhysDps').innerText = Math.round(totalPhys / realInterval);
+            document.getElementById('resArtsDps').innerText = Math.round(totalArts / realInterval);
+        }
+
+        // 初始執行一次
+        calculate();
+    </script>
+
+</body>
+
+</html>
