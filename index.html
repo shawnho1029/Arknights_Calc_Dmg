@@ -185,10 +185,9 @@
                 <div class="input-group"><label>鼓舞效果 (固定值)</label><input type="number" id="inspired" value="0"></div>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
                     <div class="input-group"><label>原始間隔 (秒)</label><input type="number" id="baseInt" value="1.3"></div>
-                    <div class="input-group"><label>攻速 ASPD</label><textarea id="aspd">28</textarea></div>
+                    <div class="input-group"><label>攻速 ASPD</label><textarea id="aspd">33</textarea></div>
                 </div>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
-                    <div class="input-group"><label>攻擊段數</label><input type="number" id="hits" value="2"></div>
                     <div class="input-group"><label>技能時長 (秒)</label><input type="number" id="duration" value="25"></div>
                 </div>
             </div>
@@ -202,6 +201,7 @@
                         <div class="input-group"><label>倍率 %</label><input type="number" id="sP" value="220"></div>
                     </div>
                     <div class="input-group"><label>附加傷害 (數值)</label><input type="number" id="fP" value="0"></div>
+                    <div class="input-group"><label>物理段數</label><input type="number" id="hP" value="2"></div>
                     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px;">
                         <div class="input-group"><label>敵方 DEF</label><input type="number" id="def" value="0"></div>
                         <div class="input-group"><label>穿透 %</label><input type="number" id="ignP" value="0"></div>
@@ -218,6 +218,7 @@
                         <div class="input-group"><label>倍率 %</label><input type="number" id="sA" value="220"></div>
                     </div>
                     <div class="input-group"><label>附加傷害 (數值)</label><input type="number" id="fA" value="0"></div>
+                    <div class="input-group"><label>法術段數</label><input type="number" id="hA" value="2"></div>
                     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px;">
                         <div class="input-group"><label>敵方 RES</label><input type="number" id="res" value="0"></div>
                         <div class="input-group"><label>穿透 %</label><input type="number" id="ignA" value="0"></div>
@@ -231,9 +232,10 @@
                     <b style="color:var(--true)">[真實參數]</b>
                     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px; margin-top:5px;">
                         <div class="input-group"><label>攻擊加成 %</label><input type="number" id="bT" value="0"></div>
-                        <div class="input-group"><label>倍率 %</label><input type="number" id="sT" value="0"></div>
+                        <div class="input-group"><label>倍率 %</label><input type="number" id="sT" value="100"></div>
                     </div>
                     <div class="input-group"><label>附加傷害 (數值)</label><input type="number" id="fT" value="0"></div>
+                    <div class="input-group"><label>真實段數</label><input type="number" id="hT" value="1"></div>
                 </div>
             </div>
 
@@ -248,17 +250,18 @@
                     </select>
                     <div class="input-group" style="margin-top:8px;">
                         <label>CD 恢復速度提升 % (加速免疫期重置)</label>
-                        <input type="number" id="eCDRec" value="0">
+                        <input type="number" id="eCDRec" value="50">
                     </div>
                     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px;">
-                        <div class="input-group"><label>加成 %</label><input type="number" id="bE" value="0"></div>
-                        <div class="input-group"><label>倍率 %</label><input type="number" id="sE" value="50"></div>
+                        <div class="input-group"><label>加成 %</label><input type="number" id="bE" value="125"></div>
+                        <div class="input-group"><label>倍率 %</label><input type="number" id="sE" value="30"></div>
                     </div>
                     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px;">
-                        <div class="input-group"><label>附加損傷</label><input type="number" id="fE" value="0"></div>
-                        <div class="input-group"><label>領域/秒損傷 %</label><input type="number" id="fieldE" value="0">
+                        <div class="input-group"><label>附加損傷</label><input type="number" id="fE" value="90"></div>
+                        <div class="input-group"><label>領域/秒損傷 %</label><input type="number" id="fieldE" value="10">
                         </div>
                     </div>
+                    <div class="input-group"><label>元素段數</label><input type="number" id="hE" value="1"></div>
                     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px;">
                         <div class="input-group"><label>EP 上限</label><input type="number" id="eMax" value="1000"></div>
                         <div class="input-group"><label>損傷抵抗</label><input type="number" id="eDef" value="0"></div>
@@ -364,7 +367,10 @@
             const rInt = frames / 30; // 實際攻擊間隔(秒)
 
             const duration = parseFloat(document.getElementById('duration').value) || 0;
-            const hits = parseInt(document.getElementById('hits').value) || 1;
+            const hP = parseInt(document.getElementById('hP').value) || 0;
+            const hA = parseInt(document.getElementById('hA').value) || 0;
+            const hT = parseInt(document.getElementById('hT').value) || 0;
+            const hE = parseInt(document.getElementById('hE').value) || 0;
             const enemyAtkInt = parseFloat(document.getElementById('enAtkInt').value) || 1.0;
 
             // 2. 獲取開關狀態 (核心閘門)
@@ -380,11 +386,12 @@
             const eResM = 1 - (parseFloat(document.getElementById('eRes').value) / 100);
             const eCDRec = 1 + (parseFloat(document.getElementById('eCDRec').value) / 100);
 
-            const eAtkBuild = ((panelAtk * (1 + parseFloat(document.getElementById('bE').value) / 100) + inspired) * (parseFloat(document.getElementById('sE').value) / 100) + parseFloat(document.getElementById('fE').value)) * eDef * hits;
+            const eAtkBuild = ((panelAtk * (1 + parseFloat(document.getElementById('bE').value) / 100) + inspired) * (parseFloat(document.getElementById('sE').value) / 100) + parseFloat(document.getElementById('fE').value)) * eDef * hE;
             const eFieldSec = (panelAtk * (parseFloat(document.getElementById('fieldE').value) / 100)) * eDef;
 
             // 模擬變量
             let actualAtkCount = 0;
+            let totalHitsCount = 0;
             let curEP = eMax, immuneTimer = 0, effectTimer = 0;
             let pTot = 0, aTot = 0, tTot = 0, totalE = 0;
             let bursts = 0, logs = [];
@@ -443,31 +450,39 @@
                 // --- 基礎傷害邏輯區塊 ---
                 if (isAtkFrame) {
                     actualAtkCount++;
-                    // 物理
-                    if (isP) {
+                    // 物理計算 (使用 hP)
+                    if (isP && hP > 0) {
                         let a = (panelAtk * (1 + parseFloat(document.getElementById('bP').value) / 100)) + inspired;
                         let d = (parseFloat(document.getElementById('def').value) || 0) * (1 - parseFloat(document.getElementById('ignP').value) / 100);
                         let dmg = Math.max((a * parseFloat(document.getElementById('sP').value) / 100 + parseFloat(document.getElementById('fP').value)) - d, a * 0.05);
-                        pTot += dmg * hits * (1 + parseFloat(document.getElementById('fraP').value) / 100) * (1 - parseFloat(document.getElementById('redP').value) / 100);
+                        pTot += dmg * hP * (1 + parseFloat(document.getElementById('fraP').value) / 100) * (1 - parseFloat(document.getElementById('redP').value) / 100);
+                        totalHitsCount += hP; // 累加物理段數
                     }
-                    // 法術
-                    if (isA) {
+                    // 法術計算 (使用 hA)
+                    if (isA && hA > 0) {
                         let a = (panelAtk * (1 + parseFloat(document.getElementById('bA').value) / 100)) + inspired;
                         let r = Math.max(0, (parseFloat(document.getElementById('res').value) || 0) - currentResDebuff) * (1 - parseFloat(document.getElementById('ignA').value) / 100);
                         let dmg = Math.max((a * parseFloat(document.getElementById('sA').value) / 100 + parseFloat(document.getElementById('fA').value)) * (1 - r / 100), a * 0.05);
-                        aTot += dmg * hits * (1 + parseFloat(document.getElementById('fraA').value) / 100) * (1 - parseFloat(document.getElementById('redA').value) / 100);
+                        aTot += dmg * hA * (1 + parseFloat(document.getElementById('fraA').value) / 100) * (1 - parseFloat(document.getElementById('redA').value) / 100);
+                        totalHitsCount += hA; // 累加法術段數
                     }
-                    // 真實
-                    if (isT) {
+                    // 真實計算 (使用 hT)
+                    if (isT && hT > 0) {
                         let a = (panelAtk * (1 + parseFloat(document.getElementById('bT').value) / 100)) + inspired;
-                        tTot += (a * parseFloat(document.getElementById('sT').value) / 100 + parseFloat(document.getElementById('fT').value)) * hits;
+                        tTot += (a * parseFloat(document.getElementById('sT').value) / 100 + parseFloat(document.getElementById('fT').value)) * hT;
+                        totalHitsCount += hT;
+                    }
+                    // 元素累積 (使用 hE)
+                    if (isE && hE > 0 && immuneTimer <= 0) {
+                        curEP -= eAtkBuild;
+                        // 注意：元素通常不計入 UI 的「總 Hits」，若你想計入，可取消註釋下行
+                        // totalHitsCount += hE; 
                     }
                 }
             }
 
             // --- 5. 渲染與最終結果計算 ---
-            const totalHitsCount = actualAtkCount * hits;
-            document.getElementById('rTotalHits').innerText = totalHitsCount.toLocaleString();
+            document.getElementById('rTotalHits').innerText = totalHitsCount.toLocaleString()
             document.getElementById('rAtk').innerText = Math.round(panelAtk + inspired);
             document.getElementById('rInt').innerText = rInt.toFixed(3) + "s";
             document.getElementById('rF').innerText = frames;
